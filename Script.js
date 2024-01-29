@@ -228,16 +228,3 @@ function getRandomColor() {
     }
     return color;
 }
-
-function runJeu() {
-    if (modeJeu === 'create') {
-        setMode('jeu');
-        jeuVie = new jeuDeLaVie(200);
-        jeuVie.run();
-    } else {
-        setMode('create');
-        jeuVie.stop();
-        mainGrille = createGrille(); // Resetting the grid
-        updateCanvas(); // Updating the canvas
-    }
-}
