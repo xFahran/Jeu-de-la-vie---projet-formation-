@@ -49,26 +49,6 @@ canv.addEventListener('mouseup', (event) => {
     }
 })
 
-function updateCanvas() {
-    let ctx = canv.getContext('2d');
-    ctx.beginPath();
-    ctx.fillStyle = '#F0F0F0';
-    ctx.rect(0, 0, canv.width, canv.height);
-    ctx.fill();
-    ctx.closePath();
-    ctx.beginPath();
-    ctx.fillStyle = 'black';
-    for (let l = 0; l < 30; l++) {
-        for (let c = 0; c < 30; c++) {
-            if (mainGrille[l][c] === true) {
-                ctx.rect(c * 10, l * 10, 10, 10);
-                ctx.fill();
-            }
-        }
-    }
-    ctx.closePath();
-}
-
 function runJeu() {
     if (modeJeu === 'create') {
         setMode('jeu');
