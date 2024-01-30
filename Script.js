@@ -6,6 +6,7 @@ const enCreation = "Mode création";
 const enJeu = "Mode simulation";
 const lancerJeu = "Lancer jeu";
 const arretJeu = "Arrêter la simulation";
+const tailleGrille = 30;
 /** @type {Array[][]} */
 let mainGrille = createGrille();
 /** @type {HTMLCanvasElement} */
@@ -53,13 +54,20 @@ function runJeu() {
     if (modeJeu === 'create') {
         setMode('jeu');
         jeuVie = new jeuDeLaVie(200);
-        jeuVie.run();
+        requestAnimationFrame(animate);
     } else {
         setMode('create');
         jeuVie.stop();
-        mainGrille = createGrille(); // Réinitialisation de la grille
-        updateCanvas(); // Mise à jour du canvas
+        mainGrille = createGrille(); 
+        updateCanvas(); 
     }
+}
+function animate() {
+    jeuVie.run().then(() => {
+        if (modeJeu === 'jeu') {
+            requestAnimationFrame(animate);
+        }
+    });
 }
 
 
@@ -69,27 +77,26 @@ class jeuDeLaVie {
         this.running = false;
     }
 
-
     async run() {
         this.running = true;
         let tempGrille = createGrille();
         for (let cycle = 0; cycle < this.nbCycles; cycle++) {
             if (!this.running) break;
-    
-            for (let l = 0; l < 30; l++) {
-                for (let c = 0; c < 30; c++) {
+
+            for (let [l, ligne] of mainGrille.entries()) {
+                for (let [c, cellule] of ligne.entries()) {
                     let vivants = this.nbVoisinsVivants(c, l);
-                    if (mainGrille[l][c]) {
+                    if (cellule) {
                         tempGrille[l][c] = vivants === 2 || vivants === 3;
                     } else {
                         tempGrille[l][c] = vivants === 3;
                     }
                 }
             }
-    
+
             this.transferGrille(tempGrille, mainGrille);
             updateCanvas();
-            await this.sleep(200); 
+            await this.sleep(200);
         }
     }
     
