@@ -2,23 +2,23 @@
 body {
     font-family: Arial, sans-serif;
     text-align: center;
-    background-color: #f4f4f4;
+    background-color: #ede9e9;
 }
 
 h2 {
-    color: #333;
+    color: #0099ff;
 }
 
 canvas {
-    border: 1px solid #ddd;
+    border: 1px solid #ff0404;
     background-image: linear-gradient(to right, #bdc3c7, #2c3e50);
     display: block;
     margin: 20px auto;
 }
 
 button {
-    background-color: #3498db;
-    color: white;
+    background-color: #0099ff;
+    color: #ffffff;
     padding: 10px 20px;
     border: none;
     border-radius: 5px;
@@ -27,8 +27,8 @@ button {
 }
 
 button:hover {
-    background-color: #2980b9;
-    transform: scale(1.05);
+    background-color: #190856;
+    transform: scale(1.45);
 }
 
 #labelButton {
