@@ -1,78 +1,84 @@
+
+// Constantes pour la configuration
+const TAILLE_GRILLE = 30;
+const DIMENSION_CELLULE = 10;
+const COULEUR_CELLULE_CREATION = 'black';
+
+// Variables d'état du jeu
 let modeJeu = 'create';
 let jeuVie;
-let statutBar = document.getElementById("statutBar");
-let labelButton = document.getElementById("labelButton");
-const enCreation = "Mode création";
-const enJeu = "Mode simulation";
-const lancerJeu = "Lancer jeu";
-const arretJeu = "Arrêter la simulation";
-const tailleGrille = 30;
-/** @type {Array[][]} */
 let mainGrille = createGrille();
-/** @type {HTMLCanvasElement} */
-let canv = document.getElementById('surface');
 
+// Éléments du DOM
+const statutBar = document.getElementById("statutBar");
+const labelButton = document.getElementById("labelButton");
+const canv = document.getElementById('surface');
+const ctx = canv.getContext('2d');
+
+// Configuration initiale
 setMode('create');
 updateCanvas();
 
+// Fonctions
 function setMode(m) {
-    if (m === 'create') {
-        modeJeu = 'create';
-        statutBar.innerText = enCreation;
-        labelButton.innerText = lancerJeu;
-    }
-    if (m === 'jeu') {
-        modeJeu = 'jeu';
-        statutBar.innerText = enJeu;
-        labelButton.innerText = arretJeu;
-    }
+    modeJeu = m;
+    statutBar.innerText = m === 'create' ? "Mode création" : "Mode simulation";
+    labelButton.innerText = m === 'create' ? "Lancer jeu" : "Arrêter la simulation";
 }
 
 function createGrille() {
-    let result = new Array();
-    let ligne;
-    for (let l = 0; l < 30; l++) {
-        ligne = new Array();
-        for (let c = 0; c < 30; c++) {
-            ligne.push(false);
-        }
-        result.push(ligne);
-    }
-    return result;
+    return Array.from({ length: TAILLE_GRILLE }, () => Array(TAILLE_GRILLE).fill(false));
 }
 
 canv.addEventListener('mouseup', (event) => {
     if (modeJeu === 'create') {
-        let caseX = ~~(event.offsetX / 10);
-        let caseY = ~~(event.offsetY / 10);
+        let caseX = Math.floor(event.offsetX / DIMENSION_CELLULE);
+        let caseY = Math.floor(event.offsetY / DIMENSION_CELLULE);
         mainGrille[caseY][caseX] = !mainGrille[caseY][caseX];
         updateCanvas();
     }
-})
+});
 
 function runJeu() {
     if (modeJeu === 'create') {
         setMode('jeu');
-        jeuVie = new jeuDeLaVie(200);
+        jeuVie = new JeuDeLaVie(TAILLE_GRILLE, 200); // Supposition de 200 cycles
         requestAnimationFrame(animate);
     } else {
         setMode('create');
         jeuVie.stop();
-        mainGrille = createGrille(); 
-        updateCanvas(); 
+        mainGrille = createGrille();
+        updateCanvas();
     }
 }
+
 function animate() {
     jeuVie.run().then(() => {
-        if (modeJeu === 'jeu') {
+        if (jeuVie.running) {
             requestAnimationFrame(animate);
         }
     });
 }
 
+function updateCanvas() {
+    ctx.clearRect(0, 0, canv.width, canv.height);
+    mainGrille.forEach((row, l) => {
+        row.forEach((cell, c) => {
+            if (cell) {
+                ctx.fillStyle = modeJeu === 'jeu' ? getRandomColor() : COULEUR_CELLULE_CREATION;
+                ctx.fillRect(c * DIMENSION_CELLULE, l * DIMENSION_CELLULE, DIMENSION_CELLULE, DIMENSION_CELLULE);
+            }
+        });
+    });
+}
 
-class jeuDeLaVie {
-    constructor(nbCycles) {
+function getRandomColor() {
+    return '#' + Math.floor(Math.random() * 16777215).toString(16);
+}
+
+class JeuDeLaVie {
+    constructor(taille, nbCycles) {
+        this.taille = taille;
         this.nbCycles = nbCycles;
         this.running = false;
     }
@@ -83,135 +89,51 @@ class jeuDeLaVie {
         for (let cycle = 0; cycle < this.nbCycles; cycle++) {
             if (!this.running) break;
 
-            for (let [l, ligne] of mainGrille.entries()) {
-                for (let [c, cellule] of ligne.entries()) {
-                    let vivants = this.nbVoisinsVivants(c, l);
-                    if (cellule) {
-                        tempGrille[l][c] = vivants === 2 || vivants === 3;
-                    } else {
-                        tempGrille[l][c] = vivants === 3;
-                    }
+            for (let l = 0; l < this.taille; l++) {
+                for (let c = 0; c < this.taille; c++) {
+                    let vivants = this.nbVoisinsVivants(c, l, mainGrille);
+                    let cellule = mainGrille[l][c];
+                    tempGrille[l][c] = cellule ? (vivants === 2 || vivants === 3) : (vivants === 3);
                 }
             }
 
             this.transferGrille(tempGrille, mainGrille);
             updateCanvas();
-            await this.sleep(200);
+            await this.sleep(200); // Supposition d'un délai de 200 ms
         }
+        this.running = false;
     }
-    
-    transferGrille(tempGrille, mainGrille) {
-        for (let l = 0; l < 30; l++) {
-            for (let c = 0; c < 30; c++) {
-                mainGrille[l][c] = tempGrille[l][c];
-            }
-        }
-    }
-    
-    nbVoisinsVivants(x, y) {
+
+    nbVoisinsVivants(x, y, grille) {
         let count = 0;
         for (let dx = -1; dx <= 1; dx++) {
             for (let dy = -1; dy <= 1; dy++) {
-                if (dx === 0 && dy === 0) continue; 
-                let nx = this.modulo(x + dx, 30);
-                let ny = this.modulo(y + dy, 30);
-                if (mainGrille[ny][nx]) count++;
+                if (dx === 0 && dy === 0) continue;
+                let nx = this.modulo(x + dx, this.taille);
+                let ny = this.modulo(y + dy, this.taille);
+                if (grille[ny][nx]) count++;
             }
         }
         return count;
     }
-    
-    stop() {
-        this.running = false;
-    }
-    
 
-    /**
-     * transfert la grille temporaire créée par la méthode
-     * run dans la grille de modélisation globale
-     */
-    transferGrille(tempGrille, mainGrille) {
-        for (let l = 0; l < 30; l++) {
-            for (let c = 0; c < 30; c++) {
-                mainGrille[l][c] = tempGrille[l][c];
+    transferGrille(tempGrille, grille) {
+        for (let l = 0; l < this.taille; l++) {
+            for (let c = 0; c < this.taille; c++) {
+                grille[l][c] = tempGrille[l][c];
             }
         }
     }
 
-    /**
-     * calcul n modulo m, avec n entier relatif
-     * @param {number} n 
-     * @param {number} m 
-     * @returns {number}
-     */
     modulo(n, m) {
-        return ((n % m) + m) % m
+        return ((n % m) + m) % m;
     }
 
-    /**
-     * Méthode qui retourne le nombre de cellules vivantes
-     * voisines de la cellule en position (x,y)
-     * Les bords du tableau sont considérés comme adjacents
-     * @param {number} x - coordonnée horizontale de la cellule
-     * @param {number} y - coordonnée verticale de la cellule
-     * @returns {number} - nombre de voisins vivants
-     */
-    nbVoisinsVivants(x, y) {
-        let count = 0;
-        for (let dx = -1; dx <= 1; dx++) {
-            for (let dy = -1; dy <= 1; dy++) {
-                if (dx === 0 && dy === 0) continue; 
-                let nx = this.modulo(x + dx, 30);
-                let ny = this.modulo(y + dy, 30);
-                if (mainGrille[ny][nx]) count++;
-            }
-        }
-        return count;
-    }
-
-    /**
-     * @param {number} ms - 
-     * @returns
-     */
     sleep(ms) {
-        return new Promise((resolve) => { setTimeout(resolve, ms) });
+        return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    
     stop() {
         this.running = false;
     }
-}
-
-
-function updateCanvas() {
-    let ctx = canv.getContext('2d');
-    ctx.clearRect(0, 0, canv.width, canv.height); 
-
-    ctx.beginPath();
-    ctx.fillStyle = '#F0F0F0'; 
-    ctx.rect(0, 0, canv.width, canv.height);
-    ctx.fill();
-    ctx.closePath();
-
-    for (let l = 0; l < 30; l++) {
-        for (let c = 0; c < 30; c++) {
-            if (mainGrille[l][c] === true) {
-                ctx.fillStyle = modeJeu === 'jeu' ? getRandomColor() : 'black';
-                ctx.beginPath();
-                ctx.rect(c * 10, l * 10, 10, 10);
-                ctx.fill();
-                ctx.closePath();
-            }
-        }
-    }
-}
-
-function getRandomColor() {
-    let letters = '0123456789ABCDEF';
-    let color = '#';
-    for (let i = 0; i < 6; i++) {
-        color += letters[Math.floor(Math.random() * 16)];
-    }
-    return color;
 }
