@@ -99,7 +99,7 @@ class JeuDeLaVie {
 
             this.transferGrille(tempGrille, mainGrille);
             updateCanvas();
-            await this.sleep(200); // Supposition d'un délai de 200 ms
+            await this.sleep(200); // Supposition d'un délai de 200 cycles
         }
         this.running = false;
     }
